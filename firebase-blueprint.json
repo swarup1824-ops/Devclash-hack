@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Candidate demographic and calibration data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string" },
+        "experience": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "fullName", "email", "role", "experience"]
+    },
+    "InterviewResult": {
+      "title": "Interview Result",
+      "description": "Detailed analysis of an interview session.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "experience": { "type": "string" },
+        "source": { "type": "string", "enum": ["debrief", "mock"] },
+        "score": { "type": "number" },
+        "analysis": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "role", "experience", "source", "score", "analysis", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document indexed by Auth UID."
+    },
+    "interviews/{interviewId}": {
+      "schema": "InterviewResult",
+      "description": "Interview analysis results."
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "WhyNotHired",
+  "description": "Unlock the brutal truth about your interview performance. Analyze responses and reveal exactly why you didn't progress.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

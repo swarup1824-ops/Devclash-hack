@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- User Validation ---
+    function isValidUser(data) {
+      return data.uid == request.auth.uid
+        && data.fullName is string && data.fullName.size() <= 100
+        && data.email is string && data.email.size() <= 100
+        && data.phone is string && data.phone.size() <= 20
+        && data.role is string && data.role.size() <= 50
+        && data.experience is string && data.experience.size() <= 50;
+    }
+
+    // --- Interview Validation ---
+    function isValidInterview(data) {
+      return data.userId == request.auth.uid
+        && data.role is string && data.role.size() <= 50
+        && data.experience is string && data.experience.size() <= 50
+        && data.source in ['debrief', 'mock']
+        && data.score is number && data.score >= 0 && data.score <= 10
+        && data.analysis is map;
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().keys().hasAll(['uid', 'fullName', 'email', 'role', 'experience', 'phone', 'createdAt'])
+        && incoming().keys().size() == 7;
+      
+      allow update: if isOwner(userId)
+        && isValidUser(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'role', 'experience', 'phone']);
+    }
+
+    // --- Interviews Collection ---
+    match /interviews/{interviewId} {
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn()
+        && isValidId(interviewId)
+        && isValidInterview(incoming())
+        && incoming().createdAt == request.time
+        && incoming().keys().hasAll(['userId', 'role', 'experience', 'source', 'score', 'analysis', 'createdAt'])
+        && incoming().keys().size() == 7;
+
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
